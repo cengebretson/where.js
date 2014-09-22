@@ -312,7 +312,7 @@
       var csv = loader(file[1]);
 
       // set first row as labels
-      var labels = [];
+      var labels = data = [];
       var firstRow = csv[0]
       for (var property in firstRow) {
         if (firstRow.hasOwnProperty(property)) {
