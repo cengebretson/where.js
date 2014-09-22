@@ -295,7 +295,7 @@
 
     var table;
     var file;
-    var data;
+    var data = [];
     var str, row, size, i, z;
     var rows = [];
     var fs = fnBody.toString();
