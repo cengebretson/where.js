@@ -294,17 +294,45 @@
   function parseDataTable(fnBody) {
 
     var table;
+    var file;
     var data;
-    var str, row, size, i;
+    var str, row, size, i, z;
     var rows = [];
     var fs = fnBody.toString();
 
     // find data table
 
+    // try to see if csv file
+    file = fs.match(/\/\/\s*csv:\s*([^\n]+)/);
     // try to match on compiled coffeescript first
     table = fs.match(/[\"][^\n]+[\n]?[^\n]+[\"][\;]/);
 
-    if (table) {
+    if (file && require) {
+      var loader = require('csv-load-sync');
+      var csv = loader(file[1]);
+
+      // set first row as labels
+      var labels = [];
+      var firstRow = csv[0]
+      for (var property in firstRow) {
+        if (firstRow.hasOwnProperty(property)) {
+          labels.push(property);
+        }
+      }
+      data.push(labels);
+
+      // need to reformat data so it matches expected format
+      for (i = 0; i < csv.length; i++) {
+        var values = [];
+        var oneRow = csv[i];
+        for (z = 0; z < labels.length; z++) {
+          var label = labels[z];
+          values.push(oneRow[label]);
+        }
+        data.push(values);
+      }
+
+    } else if (table) {
 
       // match on compiled multiline string in coffeescript
       // submitted by jason karns
@@ -349,7 +377,6 @@
         }
 
         convertTypes(row);
-
         rows.push(row);
       }
     }
