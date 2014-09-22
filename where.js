@@ -303,7 +303,7 @@
     // find data table
 
     // try to see if csv file
-    file = fs.match(/\/\/\s*csv:\s*([^\n]+)/);
+    file = fs.match(/\/\*\s*csv:\s*(.+)\s*\*\//);
     // try to match on compiled coffeescript first
     table = fs.match(/[\"][^\n]+[\n]?[^\n]+[\"][\;]/);
 
@@ -319,7 +319,7 @@
           labels.push(property);
         }
       }
-      data.push(labels);
+      data.push(labels.join(' | '));
 
       // need to reformat data so it matches expected format
       for (i = 0; i < csv.length; i++) {
@@ -329,7 +329,7 @@
           var label = labels[z];
           values.push(oneRow[label]);
         }
-        data.push(values);
+        data.push(values.join(' | '));
       }
 
     } else if (table) {
