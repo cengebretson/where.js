@@ -303,7 +303,7 @@
     // find data table
 
     // try to see if csv file
-    file = fs.match(/\/\*\s*csv:\s*(.+)\s*\*\//);
+    file = fs.match(/\/\*\s*csv:\s*(.+)\s+\*\//);
     // try to match on compiled coffeescript first
     table = fs.match(/[\"][^\n]+[\n]?[^\n]+[\"][\;]/);
 
