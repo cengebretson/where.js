@@ -115,28 +115,36 @@
 
     context = context || {};
 
+    // set internal flag if data context value is true
+
+    if (context.data) {
+      context._data = true;
+    }
+
     // long stretch of procedural code here
 
     var fs = fn.toString();
-
     var fnBody = fs.replace(/\s*function[^\(]*[\(][^\)]*[\)][^\{]*{/,'')
                             .replace(/[\}]$/, '');
-    var fnVars = '\n;';
 
+    // handle parsing data
+
+    var data   = parseDataTable(fnBody, context.table);
+    var labels = data.labels;
+    var values = data.values;
+
+    // loop over context variables and make local variables
+
+    var fnVars = '\n;';
     for (var key in context) {
       if (context.hasOwnProperty(key)) {
         fnVars = fnVars + 'var ' + key + ' = context[\'' + key + '\'];\n';
       }
     }
 
-    fnBody = fnVars + fnBody;
-
-    var data = parseDataTable(fnBody);
-    var labels = data.labels;
-    var values = data.values;
-
     // ES5 environments only
     // see http://caniuse.com/use-strict
+    fnBody = fnVars + fnBody;
     fnBody = '"use strict";\n' + fnBody;
 
     /*
@@ -144,7 +152,10 @@
      * fnBody is what's left of the original function, mainly the expectation,
      * plus any context attributes.
      */
-    var fnTest = new Function('context,' + labels.toString(), fnBody);
+    var parameters = 'context,' + labels.toString();
+    var fnTest     = new Function(parameters, fnBody);
+
+    // results to return
 
     var failing = [];
     var passing = [];
@@ -159,12 +170,10 @@
      * strategy.
      */
     var applyStrategy = (function findStrategy(context) {
-
       var list = where.strategy.list();
       var name;
 
       for (var i = 0; i < list.length;  i += 1) {
-
         if (context[list[i]] || context.strategy === list[i]) {
           name = list[i];
           break;
@@ -177,26 +186,30 @@
     // apply the strategy to test each row of data
     for (var test, i = 0; i < values.length; i += 1) {
 
-      test = { result: PASSED };
+      // create data object if context._data is true
+      if (context._data) {
+        context.data = {}
+        for (var z = 0; z < labels.length; z++) {
+          context.data[labels[z]] = values[i][z];
+        }
+      }
 
+      // run test
+      test = { result: PASSED };
       applyStrategy(fnTest, test, values[i]);
 
       // each strategy modifies test.result if the test fails.
       test.message = formatMessage(labels, values[i], test.result);
 
       if (test.result != PASSED) {
-
         // always log failures
         console.log(test.message);
         failing.push(test);
-
       } else {
-
-        passing.push(test);
-
         if (context.log) {
           console.log(test.message);
         }
+        passing.push(test);
       }
     }
 
@@ -225,34 +238,35 @@
    * @returns {String} formatted message
    */
   function formatMessage(labels, rowValues, result) {
+    var tempLabels    = [];
+    var tempRowValues = [];
 
     for (var value, type, diff, i = 0; i < labels.length; i++) {
 
       value = rowValues[i];
       type = typeof value;
-
       if (type == 'undefined' || value === null) {
         value = '';
       } else if (type != 'string') {
         value = String(value);
       }
 
-      diff = labels[i].length - value.length;
+      tempRowValues[i] = value;
+      tempLabels[i]    = labels[i];
 
+      diff = labels[i].length - value.length;
       if (diff > 0) {
         // pad row value
-        rowValues[i] = value + Array(diff + 1).join(SPACE);
-      }
-      if (diff < 0) {
+        tempRowValues[i] = value + Array(diff + 1).join(SPACE);
+      } else if (diff < 0) {
         // pad label
         diff = diff * -1;
-        labels[i] = labels[i] + Array(diff + 1).join(SPACE);
+        tempLabels[i] = labels[i] + Array(diff + 1).join(SPACE);
       }
     }
 
-
-    return '\n [' + labels.join(PAD)    + '] : ' +
-           '\n [' + rowValues.join(PAD) + '] (' + result + ') \n';
+    return '\n [' + tempLabels.join(PAD)    + '] : ' +
+           '\n [' + tempRowValues.join(PAD) + '] (' + result + ') \n';
   }
 
 
@@ -291,25 +305,21 @@
    * @param {Function|String} fnBody
    * @returns {Object} data containing labels and values arrays.
    */
-  function parseDataTable(fnBody) {
-
+  function parseDataTable(fnBody, fnData) {
+    if (fnData)
+      console.log(fnData, fnBody) 
     var table;
-    var file;
     var data = [];
     var str, row, size, i, z;
     var rows = [];
     var fs = fnBody.toString();
 
-    // find data table
+    // first check for loading csv file...
 
-    // try to see if csv file
-    file = fs.match(/\/\*\s*csv:\s*(.+)\s+\*\//);
-    // try to match on compiled coffeescript first
-    table = fs.match(/[\"][^\n]+[\n]?[^\n]+[\"][\;]/);
-
-    if (file && require) {
-      var loader = require('csv-load-sync');
-      var csv = loader(file[1]);
+    if (table = fs.match(/\/\*\s*csv:\s*(.+)\s+\*\//)) {
+      console.assert(require, 'CSV file loading is only available while running in node.');
+      var loader = require('./loadcsv.js');
+      var csv = loader(table[1]);
 
       // set first row as labels
       var labels = [];
@@ -332,35 +342,35 @@
         data.push(values.join(' | '));
       }
 
-    } else if (table) {
+    // match on compiled multiline string in coffeescript
+    // submitted by jason karns
+    // https://github.com/dfkaye/where.js/issues/6
 
-      // match on compiled multiline string in coffeescript
-      // submitted by jason karns
-      // https://github.com/dfkaye/where.js/issues/6
+    } else if (table = fs.match(/[\"][^\n]+[\n]?[^\n]+[\"][\;]/)) {
 
       data = table[0].replace(/[\"]/, '') // remove leading coffee quote
                      .replace(/[\"][\;]/, '') // remove closing coffee quote
                      .replace(/[\#][^\\n]+/g, '') // remove line comments...
                      .split('\\n'); // and split by escaped newline
-    } else {
 
-      // match asterisk style multiline strings
-      table = fs.match(/\/(\*){3,3}[^\*]+(\*){3,3}\//);
+    // match asterisk style multiline strings
 
-      // let it fail normally after this
-
+    } else if (table = fs.match(/\/(\*){3,3}[^\*]+(\*){3,3}\//)) {
       data = table[0].replace(/\/\/[^\r]*/g, '') // remove line comments...
                      .replace(/(\/\*+)*[\r]*(\*+\/)*/g, '') // ...block comments
                      .split('\n'); // and split by newline
+
+    // fail if we get to this point
+
+    } else {
+      // throw new Error('Unable to deteremine data to use for tests...');
     }
 
     for (i = 0; i < data.length; i++) {
-
       str = data[i].replace(/[\|][\s*]/g,'|').replace(/[\s]*[\|]/g, '|');
 
       // skip empty rows
       if (str.match(/\S+/)) {
-
         row = balanceRowData(str);
 
         // visiting label row - set size for data row iterations
@@ -409,7 +419,6 @@
     // check for left and right borders
     left = str.charAt(0) === SEP;
     right = str.charAt(str.length - 1) === SEP;
-
     if (left != right) {
       throw new Error('where.js table has unbalanced column borders: ' + str);
     }
@@ -440,14 +449,11 @@
    */
   function shouldNotHaveDuplicateLabels(row) {
     for (var label, visited = {}, j = 0; j < row.length; j += 1) {
-
       label = row[j];
-
       if (visited[label]) {
         throw new Error('where.js table contains duplicate label \'' + label +
                         '\' in [' + row.join(', ') + ']');
       }
-
       visited[label] = 1;
     }
   }
@@ -464,23 +470,20 @@
     for (var v, i = 0; i < row.length; i += 1) {
 
       v = row[i];
-
       if (v.match(/undefined|null|true|false/)) {
-
         // convert falsy values
         if (v === "undefined") row[i] = undefined;
         if (v === "null") row[i] = null;
         if (v === "true") row[i] = true;
         if (v === "false") row[i] = false;
-      }
 
-      if (v.match(/\d+/g) && v.search(/[\'|\"]/g) === -1) {
-
+      } else if (v.match(/\d+/g) && v.search(/[\'|\"]/g) === -1) {
         // convert un-quoted numerics
         // "support numeric strings #2" bug from johann-sonntagbauer
         v = v.replace(/\,/g,'');
         isNaN(v) || (row[i] = Number(v));
       }
+
     }
   }
 
@@ -559,10 +562,10 @@
   where.strategy('mocha', function mochaStrategy(context) {
 
     return function testMocha(fnTest, test, value) {
+
       try {
         fnTest.apply({}, [context].concat(value));
       } catch(err) {
-
         /*
          * johann sonntagbauer fix 15 MAR 2015
          * the strategy will be called initial with test.result = 'Passed'
