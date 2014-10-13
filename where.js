@@ -201,14 +201,15 @@
       // each strategy modifies test.result if the test fails.
       test.message = formatMessage(labels, values[i], test.result);
 
-      if (test.result != PASSED) {
-        // always log failures
+      // log messages bassed on context value
+      if (context.log) {
         console.log(test.message);
+      }
+
+      // save results
+      if (test.result != PASSED) {
         failing.push(test);
       } else {
-        if (context.log) {
-          console.log(test.message);
-        }
         passing.push(test);
       }
     }
