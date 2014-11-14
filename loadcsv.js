@@ -5,8 +5,8 @@ var del = ",|";
 function load(filename, options) {
   // set default delimiter
   options = options || {};
-  options.eol = options.eol or eol;
-  options.del = options.del or del;
+  options.eol = options.eol || eol;
+  options.del = options.del || del;
   // load content
   console.assert(typeof filename === 'string', 'missing filename');
   var content = fs.readFileSync(filename, 'utf-8');
