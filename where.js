@@ -129,9 +129,18 @@
 
     // handle parsing data
 
-    var data   = parseDataTable(fnBody, context.table);
+    var data   = parseDataTable(fnBody, context.table, context.delimiter);
     var labels = data.labels;
     var values = data.values;
+
+    // keep track of counter
+
+    if (context.counter) {
+      lables.push(typeof context.counter === 'string' ? context.counter : '_counter' );
+      for (var i = 0; i < values.length; i++) {
+        values[i].push(i);
+      }
+    }
 
     // loop over context variables and make local variables
 
@@ -306,9 +315,9 @@
    * @param {Function|String} fnBody
    * @returns {Object} data containing labels and values arrays.
    */
-  function parseDataTable(fnBody, fnData) {
+  function parseDataTable(fnBody, fnData, delimiter) {
     if (fnData)
-      console.log(fnData, fnBody) 
+      console.log(fnData, fnBody)
     var table;
     var data = [];
     var str, row, size, i, z;
@@ -319,8 +328,8 @@
 
     if (table = fs.match(/\/\*\s*csv:\s*(.+)\s+\*\//)) {
       console.assert(require, 'CSV file loading is only available while running in node.');
-      var loader = require('./loadcsv.js', { del: ",|" } );
-      var csv = loader(table[1]);
+      var loader = require('./loadcsv.js');
+      var csv = loader(table[1], { delimiter: delimiter });
 
       // set first row as labels
       var labels = [];

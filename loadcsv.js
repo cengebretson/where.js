@@ -1,12 +1,12 @@
 var fs  = require('fs');
 var eol = '\n';
-var del = ',';
+var delimiter = ',';
 
 function load(filename, options) {
   // set default delimiter
-  options = options || {};
-  options.eol = options.eol || eol;
-  options.del = options.del || del;
+  options           = options || {};
+  options.eol       = options.eol || eol;
+  options.delimiter = options.delimiter || delimiter;
   // load content
   console.assert(typeof filename === 'string', 'missing filename');
   var content = fs.readFileSync(filename, 'utf-8');
@@ -15,7 +15,7 @@ function load(filename, options) {
   console.assert(lines.length > 1, 'invalid number of lines ' + lines.length + ' in file ' + filename);
 
   var results = [];
-  var columns = getColumns(lines[0], options.del);
+  var columns = getColumns(lines[0], options.delimiter);
   console.assert(Array.isArray(columns), 'could not get columns from first line ' + lines[0]);
 
   // loop over the available lines
@@ -25,7 +25,7 @@ function load(filename, options) {
     }
 
     // retrieve values from line
-    var values = getColumns(line, options.del);
+    var values = getColumns(line, options.delimiter);
     console.assert(Array.isArray(values), 'could not get values from line ' + line);
     console.assert(values.length === columns.length,
       'expected values from line ' + line + ' to match property names ' +
