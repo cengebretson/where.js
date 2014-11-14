@@ -42,9 +42,9 @@ function load(filename, options) {
   return results;
 }
 
-function getColumns(line, del) {
+function getColumns(line, delimiter) {
   console.assert(typeof line === 'string', 'missing header line');
-  var regex   = new RegExp("(\".*?\"\\\s*|[^\"" + del + "]+)(?=\\\s*[" + del + "]|\\\s*$)","g");
+  var regex   = new RegExp("(\".*?\"\\\s*|[^\"" + delimiter + "]+)(?=\\\s*[" + delimiter + "]|\\\s*$)","g");
   var columns = line.match(regex);
   console.assert(columns.length > 1, 'invalid columns ' + JSON.stringify(columns) + ' from line ' + line);
   return stripQuotes(columns);
