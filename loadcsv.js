@@ -1,6 +1,6 @@
 var fs  = require('fs');
 var eol = '\n';
-var del = ",|";
+var del = ',';
 
 function load(filename, options) {
   // set default delimiter
@@ -44,8 +44,8 @@ function load(filename, options) {
 
 function getColumns(line, del) {
   console.assert(typeof line === 'string', 'missing header line');
-  var regex   = new RegExp("(\".*?\"\s*|[^\""+del+"]+)(? = \s*["+del+"]|\s*$)","g");
-  var columns = line.match(regex)
+  var regex   = new RegExp("(\".*?\"\\\s*|[^\"" + del + "]+)(? = \\\s*[" + del + "]|\\\s*$)","g");
+  var columns = line.match(regex);
   console.assert(columns.length > 1, 'invalid columns ' + JSON.stringify(columns) + ' from line ' + line);
   return stripQuotes(columns);
 }
