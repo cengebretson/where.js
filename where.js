@@ -319,7 +319,7 @@
 
     if (table = fs.match(/\/\*\s*csv:\s*(.+)\s+\*\//)) {
       console.assert(require, 'CSV file loading is only available while running in node.');
-      var loader = require('./loadcsv.js', ",|");
+      var loader = require('./loadcsv.js', { del: ",|" } );
       var csv = loader(table[1]);
 
       // set first row as labels
