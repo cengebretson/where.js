@@ -136,7 +136,7 @@
     // keep track of counter
 
     if (context.counter) {
-      lables.push(typeof context.counter === 'string' ? context.counter : '_counter' );
+      labels.push(typeof context.counter === 'string' ? context.counter : '_counter' );
       for (var i = 0; i < values.length; i++) {
         values[i].push(i);
       }
