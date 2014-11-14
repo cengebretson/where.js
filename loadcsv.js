@@ -1,15 +1,21 @@
 var fs  = require('fs');
 var eol = '\n';
+var del = ",|";
 
-function load(filename) {
+function load(filename, options) {
+  // set default delimiter
+  options = options || {};
+  options.eol = options.eol or eol;
+  options.del = options.del or del;
+  // load content
   console.assert(typeof filename === 'string', 'missing filename');
   var content = fs.readFileSync(filename, 'utf-8');
   console.assert(typeof content === 'string', 'missing content from ' + filename);
-  var lines = content.split(eol);
+  var lines = content.split(options.eol);
   console.assert(lines.length > 1, 'invalid number of lines ' + lines.length + ' in file ' + filename);
 
   var results = [];
-  var columns = getColumns(lines[0]);
+  var columns = getColumns(lines[0], options.del);
   console.assert(Array.isArray(columns), 'could not get columns from first line ' + lines[0]);
 
   // loop over the available lines
@@ -19,7 +25,7 @@ function load(filename) {
     }
 
     // retrieve values from line
-    var values = getColumns(line);
+    var values = getColumns(line, options.del);
     console.assert(Array.isArray(values), 'could not get values from line ' + line);
     console.assert(values.length === columns.length,
       'expected values from line ' + line + ' to match property names ' +
@@ -36,9 +42,10 @@ function load(filename) {
   return results;
 }
 
-function getColumns(line) {
+function getColumns(line, del) {
   console.assert(typeof line === 'string', 'missing header line');
-  var columns = line.match(/(".*?"\s*|[^",]+)(?=\s*,|\s*$)/g)
+  var regex   = new RegExp("(\".*?"\s*|[^\""+del+"]+)(? = \s*["+del+"]|\s*$)","g");
+  var columns = line.match(regex)
   console.assert(columns.length > 1, 'invalid columns ' + JSON.stringify(columns) + ' from line ' + line);
   return stripQuotes(columns);
 }
