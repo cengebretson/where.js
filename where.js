@@ -479,7 +479,9 @@
   function convertTypes(row) {
     for (var v, i = 0; i < row.length; i += 1) {
 
-      v = row[i];
+      v = row[i].trim();
+
+      // handle javascript types
       if (v.match(/undefined|null|true|false/)) {
         // convert falsy values
         if (v === "undefined") row[i] = undefined;
@@ -487,13 +489,16 @@
         if (v === "true") row[i] = true;
         if (v === "false") row[i] = false;
 
-      } else if (v.match(/\d+/g) && v.search(/[\'|\"]/g) === -1) {
-        // convert un-quoted numerics
-        // "support numeric strings #2" bug from johann-sonntagbauer
+      // convert un-quoted numerics
+      // "support numeric strings #2" bug from johann-sonntagbauer
+      } else if (v.match(/^\d+$/g) && v.search(/[\'|\"]/g) === -1) {
         v = v.replace(/\,/g,'');
         isNaN(v) || (row[i] = Number(v));
-      }
 
+      // convert quotes strings to normal strings
+      } else if (v.match(/^".*"$/)) {
+        row[i] = JSON.parse(v);
+      }
     }
   }
 
