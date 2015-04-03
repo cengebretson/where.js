@@ -480,7 +480,6 @@
     for (var v, i = 0; i < row.length; i += 1) {
 
       v = row[i].trim();
-
       // handle javascript types
       if (v.match(/undefined|null|true|false/)) {
         // convert falsy values
@@ -488,16 +487,30 @@
         if (v === "null") row[i] = null;
         if (v === "true") row[i] = true;
         if (v === "false") row[i] = false;
+        
 
       // convert un-quoted numerics
       // "support numeric strings #2" bug from johann-sonntagbauer
       } else if (v.match(/^\d+$/g) && v.search(/[\'|\"]/g) === -1) {
         v = v.replace(/\,/g,'');
         isNaN(v) || (row[i] = Number(v));
-
       // convert quotes strings to normal strings
       } else if (v.match(/^".*"$/)) {
         row[i] = JSON.parse(v);
+      } else if ((v.indexOf("$$") > -1)) { // working with function calls.
+        openingParen = v.indexOf('(')
+        closingParen = v.indexOf(')')
+        firstDollar = v.indexOf('$')
+        numberString = v.substring(++openingParen, closingParen);
+        firstDollar += 2
+        functionName = v.substring(firstDollar, --openingParen)
+        firstDollar -=2
+        length = parseInt(numberString)
+        if(v.charAt(0) == '$' && v.charAt(1) == '$') { // handling the data in the test
+          row[i] = global[functionName](length)
+        } else { // error message handling
+          row[i] = row[i].substring(0, firstDollar) + global[functionName](length) + row[i].substring(++closingParen)
+        }
       }
     }
   }
