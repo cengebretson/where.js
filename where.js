@@ -498,20 +498,18 @@
       } else if (v.match(/^".*"$/)) {
         row[i] = JSON.parse(v);
       } else if ((v.indexOf("$$") > -1)) { // working with function calls.
-        openingParen = v.indexOf('(')
-        closingParen = v.indexOf(')')
-        firstDollar = v.indexOf('$')
-        numberString = v.substring(++openingParen, closingParen);
-        firstDollar += 2
-        functionName = v.substring(firstDollar, --openingParen)
-        firstDollar -=2
-        length = parseInt(numberString)
-        if(v.charAt(0) == '$' && v.charAt(1) == '$') { // handling the data in the test
-          row[i] = global[functionName](length)
-        } else { // error message handling
-          row[i] = row[i].substring(0, firstDollar) + global[functionName](length) + row[i].substring(++closingParen)
+        var functionCall = /\$\$(.*?\w+)\((.*?)\)/;
+        var match = functionCall.exec(v)
+        if (match) {
+          var functionName = match[1];
+          // can't use commas to separate the params because working inside a 
+          // csv file so a comma makes it think it's a new column
+          var functionParams = match[2].split(' ');
+          // call function with apply()
+          var functionValue = global[functionName].apply(null, functionParams);
+          // replace row with value returned by function
+          row[i] =  row[i].replace(match[0], functionValue)
         }
-      }
     }
   }
 
