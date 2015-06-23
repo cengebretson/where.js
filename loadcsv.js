@@ -1,17 +1,15 @@
 var fs  = require('fs');
-var eol = '\n';
 var delimiter = ',';
 
 function load(filename, options) {
   // set default delimiter
   options           = options || {};
-  options.eol       = options.eol || eol;
   options.delimiter = options.delimiter || delimiter;
   // load content
   console.assert(typeof filename === 'string', 'missing filename');
   var content = fs.readFileSync(filename, 'utf-8');
   console.assert(typeof content === 'string', 'missing content from ' + filename);
-  var lines = content.split(options.eol);
+  var lines = content.match(/[^\r\n]+/g);
   console.assert(lines.length > 1, 'invalid number of lines ' + lines.length + ' in file ' + filename);
 
   var results = [];
