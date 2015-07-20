@@ -510,6 +510,7 @@
           // replace row with value returned by function
           row[i] =  row[i].replace(match[0], functionValue)
         }
+      }
     }
   }
 
