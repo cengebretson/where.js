@@ -478,8 +478,8 @@
    */
   function convertTypes(row) {
     for (var v, i = 0; i < row.length; i += 1) {
-
       v = row[i].trim();
+
       // handle javascript types
       if (v.match(/undefined|null|true|false/)) {
         // convert falsy values
@@ -487,8 +487,6 @@
         if (v === "null") row[i] = null;
         if (v === "true") row[i] = true;
         if (v === "false") row[i] = false;
-        
-
       // convert un-quoted numerics
       // "support numeric strings #2" bug from johann-sonntagbauer
       } else if (v.match(/^\d+$/g) && v.search(/[\'|\"]/g) === -1) {
@@ -497,12 +495,15 @@
       // convert quotes strings to normal strings
       } else if (v.match(/^".*"$/)) {
         row[i] = JSON.parse(v);
-      } else if ((v.indexOf("$$") > -1)) { // working with function calls.
+      }
+
+      // working with function calls.
+      if (typeof v === 'string' && (v.indexOf("$$") > -1)) {
         var functionCall = /\$\$(.*?\w+)\((.*?)\)/;
         var match = functionCall.exec(v)
         if (match) {
           var functionName = match[1];
-          // can't use commas to separate the params because working inside a 
+          // can't use commas to separate the params because working inside a
           // csv file so a comma makes it think it's a new column
           var functionParams = match[2].split(' ');
           // call function with apply()
